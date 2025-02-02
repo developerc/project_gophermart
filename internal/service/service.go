@@ -16,7 +16,9 @@ import (
 type repository interface {
 	Register(buf bytes.Buffer) (*http.Cookie, error)
 	UserLogin(buf bytes.Buffer) (*http.Cookie, error)
+	GetUserFromCookie(cookieValue string) (string, error)
 	GetServerSettings() *config.ServerSettings
+	PostUserOrders(usr string, buf bytes.Buffer) error
 }
 
 type Service struct {

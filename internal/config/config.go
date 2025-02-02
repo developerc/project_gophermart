@@ -96,3 +96,11 @@ func (s *ServerSettings) Register(buf bytes.Buffer) (*http.Cookie, error) {
 func (s *ServerSettings) UserLogin(buf bytes.Buffer) (*http.Cookie, error) {
 	return nil, nil
 }
+
+func (s *ServerSettings) GetUserFromCookie(cookieValue string) (string, error) {
+	return "", nil
+}
+
+func (s *ServerSettings) PostUserOrders(usr string, buf bytes.Buffer) error {
+	return nil
+}

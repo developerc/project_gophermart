@@ -4,10 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"log"
 	"time"
 
+	"github.com/developerc/project_gophermart/internal/general"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -22,6 +22,8 @@ func (e *ErrorLgnPsw) Error() string {
 func (e *ErrorLgnPsw) AsLgnPswWrong(err error) bool {
 	return errors.As(err, &e)
 }
+
+//-----
 
 func CreateTables(db *sql.DB) error {
 	const duration uint = 20
@@ -81,7 +83,7 @@ func CheckLgnPsw(db *sql.DB, usr, psw string) error {
 		cntrRows++
 		var password_match bool
 		err = rows.Scan(&password_match)
-		fmt.Println("password_match: ", password_match)
+		//fmt.Println("password_match: ", password_match)
 		if err != nil {
 			return err
 		}
@@ -96,4 +98,49 @@ func CheckLgnPsw(db *sql.DB, usr, psw string) error {
 	}
 
 	return nil
+}
+
+func LoadOrder(db *sql.DB, usr, orderNum string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	rows, err := db.QueryContext(ctx, "SELECT usr FROM orders_table WHERE order_numb = $1 ", orderNum)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	defer rows.Close()
+
+	cntrRows := 0
+	var usrInTable string
+	for rows.Next() {
+		cntrRows++
+		err = rows.Scan(&usrInTable)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	if cntrRows > 0 {
+		if usrInTable == usr {
+			tx.Rollback()
+			//return errors.New("alredy exists order the same usr 200") //добавить типизированную ошибку
+			return &general.ErrorExistsOrderSame{}
+		} else {
+			tx.Rollback()
+			//return errors.New("alredy exists order other usr 409")
+			return &general.ErrorExistsOrderOther{}
+		}
+	}
+
+	_, err = db.ExecContext(ctx, "INSERT INTO orders_table (usr, order_numb, status) values ($1, $2, $3)", usr, orderNum, "NEW")
+	if err != nil {
+		return err
+	}
+
+	// завершаем транзакцию
+	return tx.Commit()
 }
