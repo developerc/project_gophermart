@@ -8,7 +8,7 @@ type User struct {
 	Name string
 }
 
-func (s *Service) HandleCookie(cookieValue, usr string) (*http.Cookie, string, error) {
+func (s *Service) SetUserCookie(usr string) (*http.Cookie, error) {
 	//var usr string
 	var cookie *http.Cookie
 	//var err error
@@ -16,17 +16,17 @@ func (s *Service) HandleCookie(cookieValue, usr string) (*http.Cookie, string, e
 		Name: usr,
 	}
 
-	if len(cookieValue) == 0 {
-		u.Name = usr
-		if encoded, err := s.secure.Encode("user", u); err == nil {
-			cookie = &http.Cookie{
-				Name:  "user",
-				Value: encoded,
-			}
-			return cookie, usr, nil
-		} else {
-			return nil, "", err
+	//if len(cookieValue) == 0 {
+	u.Name = usr
+	if encoded, err := s.secure.Encode("user", u); err == nil {
+		cookie = &http.Cookie{
+			Name:  "user",
+			Value: encoded,
 		}
+		return cookie, nil
+	} else {
+		return nil, err
 	}
-	return nil, "", nil
+	//}
+	//return nil,  nil
 }

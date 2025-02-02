@@ -15,6 +15,7 @@ import (
 
 type repository interface {
 	Register(buf bytes.Buffer) (*http.Cookie, error)
+	UserLogin(buf bytes.Buffer) (*http.Cookie, error)
 	GetServerSettings() *config.ServerSettings
 }
 
@@ -40,13 +41,30 @@ func (s *Service) Register(buf bytes.Buffer) (*http.Cookie, error) {
 		return nil, err
 	}
 	//если новый пользователь, валидный JSON то получаем куку - зашифрованный юзер
-	cookie, _, err := s.HandleCookie("", lgnPsw.Lgn)
+	cookie, err := s.SetUserCookie(lgnPsw.Lgn)
 	if err != nil {
 		return nil, err
 	}
 	return cookie, nil
+}
 
-	return nil, nil
+func (s *Service) UserLogin(buf bytes.Buffer) (*http.Cookie, error) {
+	var err error
+	lgnPsw := LgnPsw{}
+	if err = json.Unmarshal(buf.Bytes(), &lgnPsw); err != nil {
+		return nil, err
+	}
+	fmt.Println(lgnPsw)
+	if err = dbstorage.CheckLgnPsw(s.repo.GetServerSettings().DB, lgnPsw.Lgn, lgnPsw.Psw); err != nil {
+		return nil, err
+	}
+	//fmt.Println(err)
+	//если новый пользователь, валидный JSON то получаем куку - зашифрованный юзер
+	cookie, err := s.SetUserCookie(lgnPsw.Lgn)
+	if err != nil {
+		return nil, err
+	}
+	return cookie, nil
 }
 
 func (s *Service) GetAdresRun() string {

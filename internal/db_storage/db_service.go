@@ -3,11 +3,25 @@ package dbstorage
 import (
 	"context"
 	"database/sql"
+	"errors"
+	"fmt"
 	"log"
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
+
+type ErrorLgnPsw struct {
+	s string
+}
+
+func (e *ErrorLgnPsw) Error() string {
+	return e.s
+}
+
+func (e *ErrorLgnPsw) AsLgnPswWrong(err error) bool {
+	return errors.As(err, &e)
+}
 
 func CreateTables(db *sql.DB) error {
 	const duration uint = 20
@@ -50,5 +64,36 @@ func InsertUser(db *sql.DB, usr, psw string) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func CheckLgnPsw(db *sql.DB, usr, psw string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	rows, err := db.QueryContext(ctx, "SELECT (psw = crypt($2, psw)) AS password_match FROM usr_table WHERE usr = $1 ", usr, psw)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	cntrRows := 0
+	for rows.Next() {
+		cntrRows++
+		var password_match bool
+		err = rows.Scan(&password_match)
+		fmt.Println("password_match: ", password_match)
+		if err != nil {
+			return err
+		}
+		if !password_match {
+			//return errors.New("login or password is not valid")
+			return &ErrorLgnPsw{"login or password is not valid"}
+		}
+	}
+	if cntrRows == 0 {
+		//return errors.New("login or password is not valid")
+		return &ErrorLgnPsw{"login or password is not valid"}
+	}
+
 	return nil
 }

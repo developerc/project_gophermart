@@ -92,3 +92,7 @@ func (s *ServerSettings) GetServerSettings() *ServerSettings {
 func (s *ServerSettings) Register(buf bytes.Buffer) (*http.Cookie, error) {
 	return nil, nil
 }
+
+func (s *ServerSettings) UserLogin(buf bytes.Buffer) (*http.Cookie, error) {
+	return nil, nil
+}
