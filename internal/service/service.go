@@ -19,6 +19,8 @@ type repository interface {
 	GetUserFromCookie(cookieValue string) (string, error)
 	GetServerSettings() *config.ServerSettings
 	PostUserOrders(usr string, buf bytes.Buffer) error
+	GetUserOrders(usr string) ([]byte, error)
+	GetUserBalance(usr string) ([]byte, error)
 }
 
 type Service struct {

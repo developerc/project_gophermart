@@ -2,7 +2,11 @@ package service
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+
+	//"errors"
+
 	"net/http"
 
 	dbstorage "github.com/developerc/project_gophermart/internal/db_storage"
@@ -50,13 +54,15 @@ func (s *Service) GetUserFromCookie(cookieValue string) (string, error) {
 }
 
 func (s *Service) PostUserOrders(usr string, buf bytes.Buffer) error {
-	fmt.Println("from PostUserOrders usr", usr)
+	//fmt.Println("from PostUserOrders usr", usr)
 	//var numOrderStr string
 	//numOrderStr := buf.String()
 	//numOrderBytes := buf.Bytes()
 	//fmt.Println(numOrderStr)
 	//fmt.Println(numOrderBytes)
 	//fmt.Println("len(numOrderStr):", len(numOrderStr), ", len(numOrderBytes):", len(numOrderBytes))
+	//делать не будем, хендлера на удаление юзера нет! проверка существует ли до сих пор такой юзер в таблице (мог быть раньше зарегистрирован, потом удален)
+
 	//проверка валидности строки запроса
 	for _, runeValue := range buf.String() {
 		//var isdig bool = false
@@ -67,8 +73,41 @@ func (s *Service) PostUserOrders(usr string, buf bytes.Buffer) error {
 		//fmt.Println(runeValue, isdig)
 	}
 	//Загружаем заказ. проверка номер заказа уже загружен? кем?
-	if err := dbstorage.LoadOrder(s.repo.GetServerSettings().DB, usr, buf.String()); err != nil {
+	if err := dbstorage.UploadOrder(s.repo.GetServerSettings().DB, usr, buf.String()); err != nil {
 		return err
 	}
 	return nil
+}
+
+func (s *Service) GetUserOrders(usr string) ([]byte, error) {
+	//fmt.Println("from GetUserOrders usr", usr)
+	//var arrUploadedOrder []general.UploadedOrder
+	arrUploadedOrder, err := dbstorage.GetUserOrders(s.repo.GetServerSettings().DB, usr)
+	if err != nil {
+		return nil, err
+	}
+	//fmt.Println(arrUploadedOrder)
+	jsonBytes, err := json.Marshal(arrUploadedOrder)
+	if err != nil {
+		return nil, err
+	}
+	if len(arrUploadedOrder) == 0 {
+		//return nil, errors.New("no data 204")
+		return nil, &general.ErrorNoContent{}
+	}
+
+	return jsonBytes, nil
+}
+
+func (s Service) GetUserBalance(usr string) ([]byte, error) {
+	fmt.Println("from GetUserBalance usr", usr)
+	userBalance, err := dbstorage.GetUserBalance(s.repo.GetServerSettings().DB, usr)
+	if err != nil {
+		return nil, err
+	}
+	jsonBytes, err := json.Marshal(userBalance)
+	if err != nil {
+		return nil, err
+	}
+	return jsonBytes, nil
 }

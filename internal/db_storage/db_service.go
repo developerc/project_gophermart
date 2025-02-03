@@ -37,7 +37,7 @@ func CreateTables(db *sql.DB) error {
 	}
 
 	const crord string = "CREATE TABLE IF NOT EXISTS orders_table( uuid serial primary key, " +
-		"usr TEXT, order_numb TEXT, status TEXT, accrual INTEGER NOT NULL DEFAULT 0, date_time TIMESTAMP NOT NULL DEFAULT NOW())"
+		"usr TEXT, order_numb TEXT, status TEXT NOT NULL DEFAULT 'NEW', accrual INTEGER NOT NULL DEFAULT 0, date_time TIMESTAMP NOT NULL DEFAULT NOW())"
 	_, err = db.ExecContext(ctx, crord)
 	if err != nil {
 		return err
@@ -100,7 +100,7 @@ func CheckLgnPsw(db *sql.DB, usr, psw string) error {
 	return nil
 }
 
-func LoadOrder(db *sql.DB, usr, orderNum string) error {
+func UploadOrder(db *sql.DB, usr, orderNum string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	tx, err := db.Begin()
@@ -136,11 +136,100 @@ func LoadOrder(db *sql.DB, usr, orderNum string) error {
 		}
 	}
 
-	_, err = db.ExecContext(ctx, "INSERT INTO orders_table (usr, order_numb, status) values ($1, $2, $3)", usr, orderNum, "NEW")
+	_, err = db.ExecContext(ctx, "INSERT INTO orders_table (usr, order_numb) values ($1, $2)", usr, orderNum)
 	if err != nil {
 		return err
 	}
 
 	// завершаем транзакцию
 	return tx.Commit()
+}
+
+func GetUserOrders(db *sql.DB, usr string) ([]general.UploadedOrder, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	rows, err := db.QueryContext(ctx, "SELECT order_numb, status, accrual, date_time from orders_table WHERE usr = $1 ORDER BY date_time DESC", usr)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var arrUploadedOrder []general.UploadedOrder = make([]general.UploadedOrder, 0)
+	for rows.Next() {
+		uploadedOrder := general.UploadedOrder{}
+		var number string
+		var status string
+		var accrual int
+		var uploaded_at time.Time
+		err = rows.Scan(&number, &status, &accrual, &uploaded_at)
+		if err != nil {
+			return nil, err
+		}
+		uploadedOrder.Number = number
+		uploadedOrder.Status = status
+		uploadedOrder.Accrual = accrual
+		//fmt.Println(uploaded_at.Format("2006-01-02T15:04:05-07:00"))
+		/*uploaded_at, err = time.Parse(time.RFC3339, uploaded_at.String())
+		if err != nil {
+			return nil, err
+		}*/
+		//fmt.Println(uploaded_at)
+		uploadedOrder.UploadedAt = uploaded_at.Format("2006-01-02T15:04:05-07:00")
+
+		arrUploadedOrder = append(arrUploadedOrder, uploadedOrder)
+	}
+
+	return arrUploadedOrder, nil
+}
+
+func GetUserBalance(db *sql.DB, usr string) (general.UserBalance, error) {
+	var sumAccrual int
+	var sumWithdraw int
+	userBalance := general.UserBalance{}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	tx, err := db.Begin()
+	if err != nil {
+		return userBalance, err
+	}
+	rows, err := db.QueryContext(ctx, "SELECT SUM(accrual) from orders_table WHERE usr = $1", usr)
+	if err != nil {
+		tx.Rollback()
+		return userBalance, err
+	}
+	defer rows.Close()
+	cntrRows := 0
+	for rows.Next() {
+		cntrRows++
+		err = rows.Scan(&sumAccrual)
+		if err != nil {
+			tx.Rollback()
+			return userBalance, err
+		}
+	}
+	if cntrRows == 0 {
+		sumAccrual = 0
+	}
+	userBalance.Current = sumAccrual
+
+	rows2, err := db.QueryContext(ctx, "SELECT SUM(withdraw) from withdraw_table WHERE usr = $1", usr)
+	if err != nil {
+		tx.Rollback()
+		return userBalance, err
+	}
+	defer rows2.Close()
+	cntrRows = 0
+	for rows.Next() {
+		cntrRows++
+		err = rows2.Scan(&sumWithdraw)
+		if err != nil {
+			tx.Rollback()
+			return userBalance, err
+		}
+	}
+	if cntrRows == 0 {
+		sumWithdraw = 0
+	}
+	userBalance.Withdrawn = sumWithdraw
+
+	return userBalance, nil
 }

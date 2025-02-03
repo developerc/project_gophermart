@@ -18,6 +18,8 @@ type svc interface {
 	UserLogin(buf bytes.Buffer) (*http.Cookie, error)
 	GetUserFromCookie(cookieValue string) (string, error)
 	PostUserOrders(usr string, buf bytes.Buffer) error
+	GetUserOrders(usr string) ([]byte, error)
+	GetUserBalance(usr string) ([]byte, error)
 }
 
 type Server struct {
@@ -122,6 +124,78 @@ func (s *Server) PostUserOrders(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
+func (s *Server) GetUserOrders(w http.ResponseWriter, r *http.Request) {
+	//fmt.Println("from GetUserOrders")
+	var usr string
+	var jsonBytes []byte
+	//проверим ессть ли куки, узнаем юзера
+	cookie, err := r.Cookie("user")
+	if err != nil {
+		switch {
+		case errors.Is(err, http.ErrNoCookie):
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		default:
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+	usr, err = s.service.GetUserFromCookie(cookie.Value)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	//fmt.Println("usr: ", usr)
+	jsonBytes, err = s.service.GetUserOrders(usr)
+	if err != nil {
+		if _, ok := err.(*general.ErrorNoContent); ok {
+			http.Error(w, err.Error(), http.StatusNoContent)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if _, err := w.Write(jsonBytes); err != nil {
+		return
+	}
+}
+
+func (s *Server) GetUserBalance(w http.ResponseWriter, r *http.Request) {
+	//fmt.Println("from GetUserBalance")
+	var usr string
+	var jsonBytes []byte
+	cookie, err := r.Cookie("user")
+	if err != nil {
+		switch {
+		case errors.Is(err, http.ErrNoCookie):
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		default:
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+	usr, err = s.service.GetUserFromCookie(cookie.Value)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	jsonBytes, err = s.service.GetUserBalance(usr)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if _, err := w.Write(jsonBytes); err != nil {
+		return
+	}
+}
+
 func NewServer(service svc) (*Server, error) {
 	srv := new(Server)
 	srv.service = service
@@ -133,5 +207,7 @@ func (s *Server) SetupRoutes() http.Handler {
 	r.Post("/api/user/register", s.Register)
 	r.Post("/api/user/login", s.UserLogin)
 	r.Post("/api/user/orders", s.PostUserOrders)
+	r.Get("/api/user/orders", s.GetUserOrders)
+	r.Get("/api/user/balance", s.GetUserBalance)
 	return r
 }

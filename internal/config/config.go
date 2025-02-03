@@ -104,3 +104,11 @@ func (s *ServerSettings) GetUserFromCookie(cookieValue string) (string, error) {
 func (s *ServerSettings) PostUserOrders(usr string, buf bytes.Buffer) error {
 	return nil
 }
+
+func (s *ServerSettings) GetUserOrders(usr string) ([]byte, error) {
+	return nil, nil
+}
+
+func (s *ServerSettings) GetUserBalance(usr string) ([]byte, error) {
+	return nil, nil
+}
