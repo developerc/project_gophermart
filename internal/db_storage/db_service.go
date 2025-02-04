@@ -218,7 +218,7 @@ func GetUserBalance(db *sql.DB, usr string) (general.UserBalance, error) {
 	}
 	defer rows2.Close()
 	cntrRows = 0
-	for rows.Next() {
+	for rows2.Next() {
 		cntrRows++
 		err = rows2.Scan(&sumWithdraw)
 		if err != nil {
@@ -230,6 +230,9 @@ func GetUserBalance(db *sql.DB, usr string) (general.UserBalance, error) {
 		sumWithdraw = 0
 	}
 	userBalance.Withdrawn = sumWithdraw
-
+	err = tx.Commit()
+	if err != nil {
+		return userBalance, err
+	}
 	return userBalance, nil
 }
