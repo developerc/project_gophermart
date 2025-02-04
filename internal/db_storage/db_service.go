@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
 	"time"
 
@@ -37,14 +38,14 @@ func CreateTables(db *sql.DB) error {
 	}
 
 	const crord string = "CREATE TABLE IF NOT EXISTS orders_table( uuid serial primary key, " +
-		"usr TEXT, order_numb TEXT, status TEXT NOT NULL DEFAULT 'NEW', accrual INTEGER NOT NULL DEFAULT 0, date_time TIMESTAMP NOT NULL DEFAULT NOW())"
+		"usr TEXT, order_numb TEXT, status TEXT NOT NULL DEFAULT 'NEW', accrual REAL NOT NULL DEFAULT 0.0, date_time TIMESTAMP NOT NULL DEFAULT NOW())"
 	_, err = db.ExecContext(ctx, crord)
 	if err != nil {
 		return err
 	}
 
 	const crwd string = "CREATE TABLE IF NOT EXISTS withdraw_table( uuid serial primary key, " +
-		"usr TEXT, withdraw INTEGER NOT NULL DEFAULT 0, date_time TIMESTAMP NOT NULL DEFAULT NOW())"
+		"usr TEXT, order_numb TEXT, withdraw REAL NOT NULL DEFAULT 0.0, date_time TIMESTAMP NOT NULL DEFAULT NOW())"
 	_, err = db.ExecContext(ctx, crwd)
 	if err != nil {
 		return err
@@ -158,7 +159,7 @@ func GetUserOrders(db *sql.DB, usr string) ([]general.UploadedOrder, error) {
 		uploadedOrder := general.UploadedOrder{}
 		var number string
 		var status string
-		var accrual int
+		var accrual float64
 		var uploaded_at time.Time
 		err = rows.Scan(&number, &status, &accrual, &uploaded_at)
 		if err != nil {
@@ -182,8 +183,8 @@ func GetUserOrders(db *sql.DB, usr string) ([]general.UploadedOrder, error) {
 }
 
 func GetUserBalance(db *sql.DB, usr string) (general.UserBalance, error) {
-	var sumAccrual int
-	var sumWithdraw int
+	var sumAccrual float64
+	var sumWithdraw float64
 	userBalance := general.UserBalance{}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -191,7 +192,7 @@ func GetUserBalance(db *sql.DB, usr string) (general.UserBalance, error) {
 	if err != nil {
 		return userBalance, err
 	}
-	rows, err := db.QueryContext(ctx, "SELECT SUM(accrual) from orders_table WHERE usr = $1", usr)
+	rows, err := db.QueryContext(ctx, "SELECT COALESCE(SUM(accrual), 0 ) from orders_table WHERE usr = $1", usr)
 	if err != nil {
 		tx.Rollback()
 		return userBalance, err
@@ -211,7 +212,7 @@ func GetUserBalance(db *sql.DB, usr string) (general.UserBalance, error) {
 	}
 	userBalance.Current = sumAccrual
 
-	rows2, err := db.QueryContext(ctx, "SELECT SUM(withdraw) from withdraw_table WHERE usr = $1", usr)
+	rows2, err := db.QueryContext(ctx, "SELECT COALESCE(SUM(withdraw), 0 ) from withdraw_table WHERE usr = $1", usr)
 	if err != nil {
 		tx.Rollback()
 		return userBalance, err
@@ -235,4 +236,71 @@ func GetUserBalance(db *sql.DB, usr string) (general.UserBalance, error) {
 		return userBalance, err
 	}
 	return userBalance, nil
+}
+
+func CheckUsrOrderNumb(db *sql.DB, usr string, order string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	rows, err := db.QueryContext(ctx, "SELECT COUNT(*) from orders_table WHERE usr = $1 AND order_numb = $2", usr, order)
+	if err != nil {
+		return err
+	}
+	var cnt int
+	defer rows.Close()
+	for rows.Next() {
+		err = rows.Scan(&cnt)
+		if err != nil {
+			return err
+		}
+		fmt.Println("cnt:", cnt)
+	}
+	if cnt != 1 {
+		//return errors.New("invalid number of order")
+		return &general.ErrorNumOrder{}
+	}
+	return nil
+}
+
+func BalanceWithdraw(db *sql.DB, usr string, order string, sum float64) error {
+	var sumAccrual float64
+	var sumWithdraw float64
+	var diffSum float64
+	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+	defer cancel()
+	rows, err := db.QueryContext(ctx, "SELECT COALESCE(SUM(accrual), 0 ) from orders_table WHERE usr = $1", usr)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		err = rows.Scan(&sumAccrual)
+		if err != nil {
+			return err
+		}
+	}
+	fmt.Println("sumAccrual:", sumAccrual)
+	rows2, err := db.QueryContext(ctx, "SELECT COALESCE(SUM(withdraw), 0 ) from withdraw_table WHERE usr = $1", usr)
+	if err != nil {
+		return err
+	}
+	defer rows2.Close()
+	for rows2.Next() {
+		err = rows2.Scan(&sumWithdraw)
+		if err != nil {
+			return err
+		}
+	}
+	fmt.Println("sumWithdraw:", sumWithdraw)
+	diffSum = sumAccrual - sumWithdraw
+	fmt.Println("diffSum:", diffSum)
+	if diffSum < sum {
+		//return errors.New("not enough of loyalty points")
+		return &general.ErrorLoyaltyPoints{}
+	}
+
+	_, err = db.ExecContext(ctx, "INSERT INTO withdraw_table (usr, order_numb, withdraw) values ($1, $2, $3)", usr, order, sum)
+	if err != nil {
+		return err
+	}
+	return nil
 }

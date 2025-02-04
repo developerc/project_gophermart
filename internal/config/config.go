@@ -112,3 +112,11 @@ func (s *ServerSettings) GetUserOrders(usr string) ([]byte, error) {
 func (s *ServerSettings) GetUserBalance(usr string) ([]byte, error) {
 	return nil, nil
 }
+
+func (s *ServerSettings) PostBalanceWithdraw(usr string, buf bytes.Buffer) error {
+	return nil
+}
+
+func (s *ServerSettings) GetUserWithdrawals(usr string) ([]byte, error) {
+	return nil, nil
+}

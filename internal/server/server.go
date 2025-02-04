@@ -20,6 +20,8 @@ type svc interface {
 	PostUserOrders(usr string, buf bytes.Buffer) error
 	GetUserOrders(usr string) ([]byte, error)
 	GetUserBalance(usr string) ([]byte, error)
+	PostBalanceWithdraw(usr string, buf bytes.Buffer) error
+	GetUserWithdrawals(usr string) ([]byte, error)
 }
 
 type Server struct {
@@ -196,6 +198,52 @@ func (s *Server) GetUserBalance(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *Server) PostBalanceWithdraw(w http.ResponseWriter, r *http.Request) {
+	//fmt.Println("from PostBalanceWithdraw")
+	var usr string
+	var buf bytes.Buffer
+	cookie, err := r.Cookie("user")
+	if err != nil {
+		switch {
+		case errors.Is(err, http.ErrNoCookie):
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		default:
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+	usr, err = s.service.GetUserFromCookie(cookie.Value)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	fmt.Println("usr:", usr)
+	//заберем боди
+	_, err = buf.ReadFrom(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	err = s.service.PostBalanceWithdraw(usr, buf)
+	if err != nil {
+		if _, ok := err.(*general.ErrorNumOrder); ok {
+			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+			return
+		}
+		if _, ok := err.(*general.ErrorLoyaltyPoints); ok {
+			http.Error(w, err.Error(), http.StatusPaymentRequired)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (s *Server) GetUserWithdrawals(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("from GetUserWithdrawals")
+}
+
 func NewServer(service svc) (*Server, error) {
 	srv := new(Server)
 	srv.service = service
@@ -209,5 +257,7 @@ func (s *Server) SetupRoutes() http.Handler {
 	r.Post("/api/user/orders", s.PostUserOrders)
 	r.Get("/api/user/orders", s.GetUserOrders)
 	r.Get("/api/user/balance", s.GetUserBalance)
+	r.Post("/api/user/balance/withdraw", s.PostBalanceWithdraw)
+	r.Get("/api/user/withdrawals", s.GetUserWithdrawals)
 	return r
 }

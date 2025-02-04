@@ -17,6 +17,11 @@ type User struct {
 	Name string
 }
 
+type OrderSum struct {
+	Order string
+	Sum   float64
+}
+
 func (s *Service) SetUserCookie(usr string) (*http.Cookie, error) {
 	//var usr string
 	var cookie *http.Cookie
@@ -110,4 +115,29 @@ func (s Service) GetUserBalance(usr string) ([]byte, error) {
 		return nil, err
 	}
 	return jsonBytes, nil
+}
+
+func (s *Service) PostBalanceWithdraw(usr string, buf bytes.Buffer) error {
+	var err error
+	orderSum := OrderSum{}
+	if err = json.Unmarshal(buf.Bytes(), &orderSum); err != nil {
+		return err
+	}
+	fmt.Println(orderSum)
+	err = dbstorage.CheckUsrOrderNumb(s.repo.GetServerSettings().DB, usr, orderSum.Order)
+	fmt.Println("err1:", err)
+	if err != nil {
+		return err
+	}
+	err = dbstorage.BalanceWithdraw(s.repo.GetServerSettings().DB, usr, orderSum.Order, orderSum.Sum)
+	fmt.Println("err2:", err)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Service) GetUserWithdrawals(usr string) ([]byte, error) {
+
+	return nil, nil
 }

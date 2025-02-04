@@ -57,14 +57,27 @@ func (e *ErrorNoContent) AsErrorNoContent(err error) bool {
 }
 
 // ---
+type ErrorLoyaltyPoints struct {
+	s string
+}
+
+func (e *ErrorLoyaltyPoints) Error() string {
+	return e.s
+}
+
+func (e *ErrorLoyaltyPoints) AsErrorNoContent(err error) bool {
+	return errors.As(err, &e)
+}
+
+// ---
 type UploadedOrder struct {
-	Number     string `json:"number"`
-	Status     string `json:"status"`
-	Accrual    int    `json:"accrual,omitempty"`
-	UploadedAt string `json:"uploaded_at"`
+	Number     string  `json:"number"`
+	Status     string  `json:"status"`
+	Accrual    float64 `json:"accrual,omitempty"`
+	UploadedAt string  `json:"uploaded_at"`
 }
 
 type UserBalance struct {
-	Current   int `json:"current"`
-	Withdrawn int `json:"withdrawn"`
+	Current   float64 `json:"current"`
+	Withdrawn float64 `json:"withdrawn"`
 }
