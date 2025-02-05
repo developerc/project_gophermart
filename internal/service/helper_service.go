@@ -3,7 +3,8 @@ package service
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
+
+	//"fmt"
 
 	//"errors"
 
@@ -105,7 +106,7 @@ func (s *Service) GetUserOrders(usr string) ([]byte, error) {
 }
 
 func (s Service) GetUserBalance(usr string) ([]byte, error) {
-	fmt.Println("from GetUserBalance usr", usr)
+	//fmt.Println("from GetUserBalance usr", usr)
 	userBalance, err := dbstorage.GetUserBalance(s.repo.GetServerSettings().DB, usr)
 	if err != nil {
 		return nil, err
@@ -123,14 +124,14 @@ func (s *Service) PostBalanceWithdraw(usr string, buf bytes.Buffer) error {
 	if err = json.Unmarshal(buf.Bytes(), &orderSum); err != nil {
 		return err
 	}
-	fmt.Println(orderSum)
+	//fmt.Println(orderSum)
 	err = dbstorage.CheckUsrOrderNumb(s.repo.GetServerSettings().DB, usr, orderSum.Order)
-	fmt.Println("err1:", err)
+	//fmt.Println("err1:", err)
 	if err != nil {
 		return err
 	}
 	err = dbstorage.BalanceWithdraw(s.repo.GetServerSettings().DB, usr, orderSum.Order, orderSum.Sum)
-	fmt.Println("err2:", err)
+	//fmt.Println("err2:", err)
 	if err != nil {
 		return err
 	}

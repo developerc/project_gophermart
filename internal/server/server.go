@@ -49,7 +49,7 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 		}
 
 	}
-	fmt.Println("cookie:", cookie)
+	//fmt.Println("cookie:", cookie)
 	http.SetCookie(w, cookie)
 
 	w.WriteHeader(http.StatusOK)
@@ -147,7 +147,7 @@ func (s *Server) GetUserOrders(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	fmt.Println("usr: ", usr)
+	fmt.Println("from GetUserOrders usr: ", usr)
 	jsonBytes, err = s.service.GetUserOrders(usr)
 	if err != nil {
 		if _, ok := err.(*general.ErrorNoContent); ok {
@@ -218,7 +218,7 @@ func (s *Server) PostBalanceWithdraw(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	fmt.Println("usr:", usr)
+	//fmt.Println("usr:", usr)
 	//заберем боди
 	_, err = buf.ReadFrom(r.Body)
 	if err != nil {
@@ -259,7 +259,7 @@ func (s *Server) GetUserWithdrawals(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	fmt.Println("usr:", usr)
+	//fmt.Println("usr:", usr)
 	jsonBytes, err := s.service.GetUserWithdrawals(usr)
 	if err != nil {
 		if _, ok := err.(*general.ErrorNoContent); ok {

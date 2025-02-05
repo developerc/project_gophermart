@@ -4,7 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
+
+	//"fmt"
 	"log"
 	"time"
 
@@ -265,7 +266,7 @@ func CheckUsrOrderNumb(db *sql.DB, usr string, order string) error {
 		if err != nil {
 			return err
 		}
-		fmt.Println("cnt:", cnt)
+		//fmt.Println("cnt:", cnt)
 	}
 	err = rows.Err()
 	if err != nil {
@@ -299,7 +300,7 @@ func BalanceWithdraw(db *sql.DB, usr string, order string, sum float64) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("sumAccrual:", sumAccrual)
+	//fmt.Println("sumAccrual:", sumAccrual)
 	rows2, err := db.QueryContext(ctx, "SELECT COALESCE(SUM(withdraw), 0 ) from withdraw_table WHERE usr = $1", usr)
 	if err != nil {
 		return err
@@ -315,9 +316,9 @@ func BalanceWithdraw(db *sql.DB, usr string, order string, sum float64) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("sumWithdraw:", sumWithdraw)
+	//fmt.Println("sumWithdraw:", sumWithdraw)
 	diffSum = sumAccrual - sumWithdraw
-	fmt.Println("diffSum:", diffSum)
+	//fmt.Println("diffSum:", diffSum)
 	if diffSum < sum {
 		//return errors.New("not enough of loyalty points")
 		return &general.ErrorLoyaltyPoints{}

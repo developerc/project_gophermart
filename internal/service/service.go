@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
+
 	"fmt"
 	"log"
 	"net/http"
@@ -42,7 +43,7 @@ func (s *Service) Register(buf bytes.Buffer) (*http.Cookie, error) {
 	if err = json.Unmarshal(buf.Bytes(), &lgnPsw); err != nil {
 		return nil, err
 	}
-	fmt.Println(lgnPsw)
+	fmt.Println("from Register:", lgnPsw)
 	if err = dbstorage.InsertUser(s.repo.GetServerSettings().DB, lgnPsw.Lgn, lgnPsw.Psw); err != nil {
 		return nil, err
 	}
@@ -60,7 +61,7 @@ func (s *Service) UserLogin(buf bytes.Buffer) (*http.Cookie, error) {
 	if err = json.Unmarshal(buf.Bytes(), &lgnPsw); err != nil {
 		return nil, err
 	}
-	fmt.Println(lgnPsw)
+	//fmt.Println(lgnPsw)
 	if err = dbstorage.CheckLgnPsw(s.repo.GetServerSettings().DB, lgnPsw.Lgn, lgnPsw.Psw); err != nil {
 		return nil, err
 	}
