@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 
-	"fmt"
+	//"fmt"
 	"log"
 	"net/http"
 
@@ -43,7 +43,7 @@ func (s *Service) Register(buf bytes.Buffer) (*http.Cookie, error) {
 	if err = json.Unmarshal(buf.Bytes(), &lgnPsw); err != nil {
 		return nil, err
 	}
-	fmt.Println("from Register:", lgnPsw)
+	log.Println("from Register:", lgnPsw)
 	if err = dbstorage.InsertUser(s.repo.GetServerSettings().DB, lgnPsw.Lgn, lgnPsw.Psw); err != nil {
 		return nil, err
 	}

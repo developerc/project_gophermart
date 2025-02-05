@@ -3,7 +3,9 @@ package server
 import (
 	"bytes"
 	"errors"
-	"fmt"
+	"log"
+
+	//"fmt"
 	"net/http"
 
 	dbstorage "github.com/developerc/project_gophermart/internal/db_storage"
@@ -147,7 +149,7 @@ func (s *Server) GetUserOrders(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	fmt.Println("from GetUserOrders usr: ", usr)
+	log.Println("from GetUserOrders usr: ", usr)
 	jsonBytes, err = s.service.GetUserOrders(usr)
 	if err != nil {
 		if _, ok := err.(*general.ErrorNoContent); ok {

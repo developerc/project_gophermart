@@ -3,6 +3,7 @@ package service
 import (
 	"bytes"
 	"encoding/json"
+	"log"
 
 	//"fmt"
 
@@ -60,15 +61,8 @@ func (s *Service) GetUserFromCookie(cookieValue string) (string, error) {
 }
 
 func (s *Service) PostUserOrders(usr string, buf bytes.Buffer) error {
-	//fmt.Println("from PostUserOrders usr", usr)
-	//var numOrderStr string
-	//numOrderStr := buf.String()
-	//numOrderBytes := buf.Bytes()
-	//fmt.Println(numOrderStr)
-	//fmt.Println(numOrderBytes)
-	//fmt.Println("len(numOrderStr):", len(numOrderStr), ", len(numOrderBytes):", len(numOrderBytes))
 	//делать не будем, хендлера на удаление юзера нет! проверка существует ли до сих пор такой юзер в таблице (мог быть раньше зарегистрирован, потом удален)
-
+	log.Println("from hs PostUserOrders usr:", usr, ", order:", buf.String())
 	//проверка валидности строки запроса
 	for _, runeValue := range buf.String() {
 		//var isdig bool = false
@@ -90,15 +84,18 @@ func (s *Service) GetUserOrders(usr string) ([]byte, error) {
 	//var arrUploadedOrder []general.UploadedOrder
 	arrUploadedOrder, err := dbstorage.GetUserOrders(s.repo.GetServerSettings().DB, usr)
 	if err != nil {
+		log.Println("from hs GetUserOrders usr:", usr, ", Error dbstorage:", err)
 		return nil, err
 	}
-	//fmt.Println(arrUploadedOrder)
+	log.Println("from hs GetUserOrders usr:", usr, ", arrUploadedOrder:", arrUploadedOrder)
 	jsonBytes, err := json.Marshal(arrUploadedOrder)
 	if err != nil {
+		log.Println("from hs GetUserOrders usr:", usr, ", Error Marshal:", err)
 		return nil, err
 	}
 	if len(arrUploadedOrder) == 0 {
 		//return nil, errors.New("no data 204")
+		log.Println("from hs GetUserOrders usr:", usr, ", ErrorNoContent")
 		return nil, &general.ErrorNoContent{}
 	}
 
