@@ -93,6 +93,10 @@ func CheckLgnPsw(db *sql.DB, usr, psw string) error {
 			return &ErrorLgnPsw{"login or password is not valid"}
 		}
 	}
+	err = rows.Err()
+	if err != nil {
+		return err
+	}
 	if cntrRows == 0 {
 		//return errors.New("login or password is not valid")
 		return &ErrorLgnPsw{"login or password is not valid"}
@@ -124,6 +128,10 @@ func UploadOrder(db *sql.DB, usr, orderNum string) error {
 			tx.Rollback()
 			return err
 		}
+	}
+	err = rows.Err()
+	if err != nil {
+		return err
 	}
 	if cntrRows > 0 {
 		if usrInTable == usr {
@@ -168,15 +176,12 @@ func GetUserOrders(db *sql.DB, usr string) ([]general.UploadedOrder, error) {
 		uploadedOrder.Number = number
 		uploadedOrder.Status = status
 		uploadedOrder.Accrual = accrual
-		//fmt.Println(uploaded_at.Format("2006-01-02T15:04:05-07:00"))
-		/*uploaded_at, err = time.Parse(time.RFC3339, uploaded_at.String())
-		if err != nil {
-			return nil, err
-		}*/
-		//fmt.Println(uploaded_at)
 		uploadedOrder.UploadedAt = uploaded_at.Format("2006-01-02T15:04:05-07:00")
-
 		arrUploadedOrder = append(arrUploadedOrder, uploadedOrder)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
 	}
 
 	return arrUploadedOrder, nil
@@ -207,6 +212,10 @@ func GetUserBalance(db *sql.DB, usr string) (general.UserBalance, error) {
 			return userBalance, err
 		}
 	}
+	err = rows.Err()
+	if err != nil {
+		return userBalance, err
+	}
 	if cntrRows == 0 {
 		sumAccrual = 0
 	}
@@ -226,6 +235,10 @@ func GetUserBalance(db *sql.DB, usr string) (general.UserBalance, error) {
 			tx.Rollback()
 			return userBalance, err
 		}
+	}
+	err = rows2.Err()
+	if err != nil {
+		return userBalance, err
 	}
 	if cntrRows == 0 {
 		sumWithdraw = 0
@@ -254,6 +267,10 @@ func CheckUsrOrderNumb(db *sql.DB, usr string, order string) error {
 		}
 		fmt.Println("cnt:", cnt)
 	}
+	err = rows.Err()
+	if err != nil {
+		return err
+	}
 	if cnt != 1 {
 		//return errors.New("invalid number of order")
 		return &general.ErrorNumOrder{}
@@ -278,6 +295,10 @@ func BalanceWithdraw(db *sql.DB, usr string, order string, sum float64) error {
 			return err
 		}
 	}
+	err = rows.Err()
+	if err != nil {
+		return err
+	}
 	fmt.Println("sumAccrual:", sumAccrual)
 	rows2, err := db.QueryContext(ctx, "SELECT COALESCE(SUM(withdraw), 0 ) from withdraw_table WHERE usr = $1", usr)
 	if err != nil {
@@ -289,6 +310,10 @@ func BalanceWithdraw(db *sql.DB, usr string, order string, sum float64) error {
 		if err != nil {
 			return err
 		}
+	}
+	err = rows2.Err()
+	if err != nil {
+		return err
 	}
 	fmt.Println("sumWithdraw:", sumWithdraw)
 	diffSum = sumAccrual - sumWithdraw
@@ -328,6 +353,10 @@ func GetUserWithdrawals(db *sql.DB, usr string) ([]general.WithdrawOrder, error)
 		//uploadedOrder.UploadedAt = uploaded_at.Format("2006-01-02T15:04:05-07:00")
 		withdrawOrder.ProcessedAt = processed_at.Format("2006-01-02T15:04:05-07:00")
 		arrWithdrawOrder = append(arrWithdrawOrder, withdrawOrder)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
 	}
 	//проверить если нет rows вернуть 204
 	return arrWithdrawOrder, nil
