@@ -155,7 +155,7 @@ func UploadOrder(db *sql.DB, usr, orderNum string) error {
 }
 
 func GetUserOrders(db *sql.DB, usr string) ([]general.UploadedOrder, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 	rows, err := db.QueryContext(ctx, "SELECT order_numb, status, accrual, date_time from orders_table WHERE usr = $1 ORDER BY date_time DESC", usr)
 	if err != nil {
