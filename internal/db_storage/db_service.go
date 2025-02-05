@@ -61,7 +61,7 @@ func CreateTables(db *sql.DB) error {
 }
 
 func InsertUser(db *sql.DB, usr, psw string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 600*time.Second)
 	defer cancel()
 	_, err := db.ExecContext(ctx, "INSERT INTO usr_table (usr, psw) values ($1, crypt($2, gen_salt('md5')))", usr, psw)
 	if err != nil {
@@ -71,7 +71,7 @@ func InsertUser(db *sql.DB, usr, psw string) error {
 }
 
 func CheckLgnPsw(db *sql.DB, usr, psw string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 600*time.Second)
 	defer cancel()
 	rows, err := db.QueryContext(ctx, "SELECT (psw = crypt($2, psw)) AS password_match FROM usr_table WHERE usr = $1 ", usr, psw)
 	if err != nil {
@@ -155,7 +155,7 @@ func UploadOrder(db *sql.DB, usr, orderNum string) error {
 }
 
 func GetUserOrders(db *sql.DB, usr string) ([]general.UploadedOrder, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 600*time.Second)
 	defer cancel()
 	rows, err := db.QueryContext(ctx, "SELECT order_numb, status, accrual, date_time from orders_table WHERE usr = $1 ORDER BY date_time DESC", usr)
 	if err != nil {
@@ -191,7 +191,7 @@ func GetUserBalance(db *sql.DB, usr string) (general.UserBalance, error) {
 	var sumAccrual float64
 	var sumWithdraw float64
 	userBalance := general.UserBalance{}
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 600*time.Second)
 	defer cancel()
 	tx, err := db.Begin()
 	if err != nil {
@@ -252,7 +252,7 @@ func GetUserBalance(db *sql.DB, usr string) (general.UserBalance, error) {
 }
 
 func CheckUsrOrderNumb(db *sql.DB, usr string, order string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 600*time.Second)
 	defer cancel()
 	rows, err := db.QueryContext(ctx, "SELECT COUNT(*) from orders_table WHERE usr = $1 AND order_numb = $2", usr, order)
 	if err != nil {
@@ -282,7 +282,7 @@ func BalanceWithdraw(db *sql.DB, usr string, order string, sum float64) error {
 	var sumAccrual float64
 	var sumWithdraw float64
 	var diffSum float64
-	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 600*time.Second)
 	defer cancel()
 	rows, err := db.QueryContext(ctx, "SELECT COALESCE(SUM(accrual), 0 ) from orders_table WHERE usr = $1", usr)
 	if err != nil {
@@ -331,7 +331,7 @@ func BalanceWithdraw(db *sql.DB, usr string, order string, sum float64) error {
 }
 
 func GetUserWithdrawals(db *sql.DB, usr string) ([]general.WithdrawOrder, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 600*time.Second)
 	defer cancel()
 	rows, err := db.QueryContext(ctx, "SELECT order_numb, withdraw, date_time from withdraw_table WHERE usr = $1 ORDER BY date_time DESC", usr)
 	if err != nil {

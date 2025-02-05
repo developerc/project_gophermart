@@ -147,7 +147,7 @@ func (s *Server) GetUserOrders(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	//fmt.Println("usr: ", usr)
+	fmt.Println("usr: ", usr)
 	jsonBytes, err = s.service.GetUserOrders(usr)
 	if err != nil {
 		if _, ok := err.(*general.ErrorNoContent); ok {
