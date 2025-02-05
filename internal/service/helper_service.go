@@ -13,6 +13,7 @@ import (
 
 	dbstorage "github.com/developerc/project_gophermart/internal/db_storage"
 	"github.com/developerc/project_gophermart/internal/general"
+	"github.com/theplant/luhn"
 )
 
 type User struct {
@@ -64,13 +65,18 @@ func (s *Service) PostUserOrders(usr string, buf bytes.Buffer) error {
 	//делать не будем, хендлера на удаление юзера нет! проверка существует ли до сих пор такой юзер в таблице (мог быть раньше зарегистрирован, потом удален)
 	log.Println("from hs PostUserOrders usr:", usr, ", order:", buf.String())
 	//проверка валидности строки запроса
+	var intNum int = 0
 	for _, runeValue := range buf.String() {
 		//var isdig bool = false
 		if runeValue < 48 || runeValue > 57 {
 			//return errors.New("invalid numer of order")
 			return &general.ErrorNumOrder{}
 		}
-		//fmt.Println(runeValue, isdig)
+		//проверка на Луну
+		intNum = intNum*10 + int(runeValue-48)
+	}
+	if !luhn.Valid(intNum) {
+		return &general.ErrorNumOrder{}
 	}
 	//Загружаем заказ. проверка номер заказа уже загружен? кем?
 	if err := dbstorage.UploadOrder(s.repo.GetServerSettings().DB, usr, buf.String()); err != nil {
