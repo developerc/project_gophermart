@@ -241,7 +241,39 @@ func (s *Server) PostBalanceWithdraw(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetUserWithdrawals(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("from GetUserWithdrawals")
+	//fmt.Println("from GetUserWithdrawals")
+	var usr string
+	cookie, err := r.Cookie("user")
+	if err != nil {
+		switch {
+		case errors.Is(err, http.ErrNoCookie):
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		default:
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+	usr, err = s.service.GetUserFromCookie(cookie.Value)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	fmt.Println("usr:", usr)
+	jsonBytes, err := s.service.GetUserWithdrawals(usr)
+	if err != nil {
+		if _, ok := err.(*general.ErrorNoContent); ok {
+			http.Error(w, err.Error(), http.StatusNoContent)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if _, err := w.Write(jsonBytes); err != nil {
+		return
+	}
 }
 
 func NewServer(service svc) (*Server, error) {

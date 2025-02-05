@@ -138,6 +138,18 @@ func (s *Service) PostBalanceWithdraw(usr string, buf bytes.Buffer) error {
 }
 
 func (s *Service) GetUserWithdrawals(usr string) ([]byte, error) {
+	arrWithdrawOrder, err := dbstorage.GetUserWithdrawals(s.repo.GetServerSettings().DB, usr)
+	if err != nil {
+		return nil, err
+	}
+	jsonBytes, err := json.Marshal(arrWithdrawOrder)
+	if err != nil {
+		return nil, err
+	}
+	if len(arrWithdrawOrder) == 0 {
+		//return nil, errors.New("no data 204")
+		return nil, &general.ErrorNoContent{}
+	}
 
-	return nil, nil
+	return jsonBytes, nil
 }

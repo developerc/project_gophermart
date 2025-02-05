@@ -304,3 +304,31 @@ func BalanceWithdraw(db *sql.DB, usr string, order string, sum float64) error {
 	}
 	return nil
 }
+
+func GetUserWithdrawals(db *sql.DB, usr string) ([]general.WithdrawOrder, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	rows, err := db.QueryContext(ctx, "SELECT order_numb, withdraw, date_time from withdraw_table WHERE usr = $1 ORDER BY date_time DESC", usr)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var arrWithdrawOrder []general.WithdrawOrder = make([]general.WithdrawOrder, 0)
+	for rows.Next() {
+		withdrawOrder := general.WithdrawOrder{}
+		var order string
+		var sum float64
+		var processed_at time.Time
+		err = rows.Scan(&order, &sum, &processed_at)
+		if err != nil {
+			return nil, err
+		}
+		withdrawOrder.Order = order
+		withdrawOrder.Sum = sum
+		//uploadedOrder.UploadedAt = uploaded_at.Format("2006-01-02T15:04:05-07:00")
+		withdrawOrder.ProcessedAt = processed_at.Format("2006-01-02T15:04:05-07:00")
+		arrWithdrawOrder = append(arrWithdrawOrder, withdrawOrder)
+	}
+	//проверить если нет rows вернуть 204
+	return arrWithdrawOrder, nil
+}
