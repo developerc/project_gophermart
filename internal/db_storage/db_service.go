@@ -82,13 +82,13 @@ func CheckLgnPsw(db *sql.DB, usr, psw string) error {
 	cntrRows := 0
 	for rows.Next() {
 		cntrRows++
-		var password_match bool
-		err = rows.Scan(&password_match)
+		var passwordMatch bool
+		err = rows.Scan(&passwordMatch)
 		//fmt.Println("password_match: ", password_match)
 		if err != nil {
 			return err
 		}
-		if !password_match {
+		if !passwordMatch {
 			//return errors.New("login or password is not valid")
 			return &ErrorLgnPsw{"login or password is not valid"}
 		}
@@ -162,21 +162,21 @@ func GetUserOrders(db *sql.DB, usr string) ([]general.UploadedOrder, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	var arrUploadedOrder []general.UploadedOrder = make([]general.UploadedOrder, 0)
+	arrUploadedOrder := make([]general.UploadedOrder, 0)
 	for rows.Next() {
 		uploadedOrder := general.UploadedOrder{}
 		var number string
 		var status string
 		var accrual float64
-		var uploaded_at time.Time
-		err = rows.Scan(&number, &status, &accrual, &uploaded_at)
+		var uploadedAt time.Time
+		err = rows.Scan(&number, &status, &accrual, &uploadedAt)
 		if err != nil {
 			return nil, err
 		}
 		uploadedOrder.Number = number
 		uploadedOrder.Status = status
 		uploadedOrder.Accrual = accrual
-		uploadedOrder.UploadedAt = uploaded_at.Format("2006-01-02T15:04:05-07:00")
+		uploadedOrder.UploadedAt = uploadedAt.Format("2006-01-02T15:04:05-07:00")
 		arrUploadedOrder = append(arrUploadedOrder, uploadedOrder)
 	}
 	err = rows.Err()
@@ -338,20 +338,20 @@ func GetUserWithdrawals(db *sql.DB, usr string) ([]general.WithdrawOrder, error)
 		return nil, err
 	}
 	defer rows.Close()
-	var arrWithdrawOrder []general.WithdrawOrder = make([]general.WithdrawOrder, 0)
+	arrWithdrawOrder := make([]general.WithdrawOrder, 0)
 	for rows.Next() {
 		withdrawOrder := general.WithdrawOrder{}
 		var order string
 		var sum float64
-		var processed_at time.Time
-		err = rows.Scan(&order, &sum, &processed_at)
+		var processedAt time.Time
+		err = rows.Scan(&order, &sum, &processedAt)
 		if err != nil {
 			return nil, err
 		}
 		withdrawOrder.Order = order
 		withdrawOrder.Sum = sum
 		//uploadedOrder.UploadedAt = uploaded_at.Format("2006-01-02T15:04:05-07:00")
-		withdrawOrder.ProcessedAt = processed_at.Format("2006-01-02T15:04:05-07:00")
+		withdrawOrder.ProcessedAt = processedAt.Format("2006-01-02T15:04:05-07:00")
 		arrWithdrawOrder = append(arrWithdrawOrder, withdrawOrder)
 	}
 	err = rows.Err()
