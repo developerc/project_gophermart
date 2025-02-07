@@ -87,3 +87,9 @@ type WithdrawOrder struct {
 	Sum         float64 `json:"sum"`
 	ProcessedAt string  `json:"processed_at"`
 }
+
+type LoyaltyOrder struct {
+	Order   string  `json:"order"`
+	Status  string  `json:"status"`
+	Accrual float64 `json:"accrual,omitempty"`
+}

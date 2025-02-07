@@ -362,3 +362,38 @@ func GetUserWithdrawals(db *sql.DB, usr string) ([]general.WithdrawOrder, error)
 	//проверить если нет rows вернуть 204
 	return arrWithdrawOrder, nil
 }
+
+func GetOrderNumbs(db *sql.DB) ([]int, error) {
+	// из таблицы order_table выбираем все номера заказов где status равен NEW или REGISTERED, PROCESSING
+	ctx, cancel := context.WithTimeout(context.Background(), 600*time.Second)
+	defer cancel()
+	rows, err := db.QueryContext(ctx, "SELECT order_numb from orders_table WHERE (status = 'NEW' OR status = 'REGISTERED' OR status = 'PROCESSING')")
+	if err != nil {
+		return nil, err
+	}
+	var order int
+	var arrOrder []int = make([]int, 0)
+	for rows.Next() {
+		err = rows.Scan(&order)
+		if err != nil {
+			return nil, err
+		}
+		arrOrder = append(arrOrder, order)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+	return arrOrder, nil
+}
+
+func SetStatusAccrual(db *sql.DB, order string, status string, accrual float64) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 600*time.Second)
+	defer cancel()
+	_, err := db.ExecContext(ctx, "UPDATE orders_table SET status = $1, accrual = $2 WHERE order_numb = $3", status, accrual, order)
+	if err != nil {
+		return err
+	}
+	return nil
+}

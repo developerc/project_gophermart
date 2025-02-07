@@ -11,6 +11,7 @@ import (
 
 	"github.com/developerc/project_gophermart/internal/config"
 	dbstorage "github.com/developerc/project_gophermart/internal/db_storage"
+	"github.com/developerc/project_gophermart/internal/loyalty"
 	"github.com/gorilla/securecookie"
 )
 
@@ -100,6 +101,7 @@ func NewService() (*Service, error) {
 		return nil, err
 	}
 	service.InitSecure()
+	loyalty.RunLoyalty(serverSettings.DB, serverSettings.AdresAccrual)
 	return &service, nil
 }
 
