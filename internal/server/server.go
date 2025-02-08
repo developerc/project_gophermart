@@ -229,16 +229,24 @@ func (s *Server) PostBalanceWithdraw(w http.ResponseWriter, r *http.Request) {
 	}
 	err = s.service.PostBalanceWithdraw(usr, buf)
 	if err != nil {
-		if _, ok := err.(*general.ErrorNumOrder); ok {
+		/*if _, ok := err.(*general.ErrorNumOrder); ok {
 			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 			return
-		}
+		}*/
 		if _, ok := err.(*general.ErrorLoyaltyPoints); ok {
 			http.Error(w, err.Error(), http.StatusPaymentRequired)
 			return
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		var pgErr *pgconn.PgError
+		switch {
+		case errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) && pgErr.ConstraintName == "must_be_different_order":
+			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+			return
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
 	}
 }
 

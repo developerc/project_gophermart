@@ -39,7 +39,7 @@ func CreateTables(db *sql.DB) error {
 	}
 
 	const crord string = "CREATE TABLE IF NOT EXISTS orders_table( uuid serial primary key, " +
-		"usr TEXT, order_numb TEXT, status TEXT NOT NULL DEFAULT 'NEW', accrual REAL NOT NULL DEFAULT 0.0, date_time TIMESTAMP NOT NULL DEFAULT NOW())"
+		"usr TEXT, order_numb TEXT CONSTRAINT must_be_different_order UNIQUE, status TEXT NOT NULL DEFAULT 'NEW', accrual REAL NOT NULL DEFAULT 0.0, withdraw REAL NOT NULL DEFAULT 0.0, date_time TIMESTAMP NOT NULL DEFAULT NOW())"
 	_, err = db.ExecContext(ctx, crord)
 	if err != nil {
 		return err
@@ -188,6 +188,32 @@ func GetUserOrders(db *sql.DB, usr string) ([]general.UploadedOrder, error) {
 	return arrUploadedOrder, nil
 }
 
+func GetUserBalance2(db *sql.DB, usr string) (general.UserBalance, error) {
+	var sumAccrual float64
+	var sumWithdraw float64
+	userBalance := general.UserBalance{}
+	ctx, cancel := context.WithTimeout(context.Background(), 600*time.Second)
+	defer cancel()
+	rows, err := db.QueryContext(ctx, "SELECT COALESCE(SUM(accrual), 0 ), COALESCE(SUM(withdraw), 0 ) from orders_table WHERE (usr = $1 AND status = 'PROCESSED')", usr)
+	if err != nil {
+		return userBalance, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		err = rows.Scan(&sumAccrual, &sumWithdraw)
+		if err != nil {
+			return userBalance, err
+		}
+	}
+	userBalance.Current = sumAccrual
+	userBalance.Withdrawn = sumWithdraw
+	err = rows.Err()
+	if err != nil {
+		return userBalance, err
+	}
+	return userBalance, nil
+}
+
 func GetUserBalance(db *sql.DB, usr string) (general.UserBalance, error) {
 	var sumAccrual float64
 	var sumWithdraw float64
@@ -279,6 +305,50 @@ func CheckUsrOrderNumb(db *sql.DB, usr string, order string) error {
 	return nil
 }
 
+func BalanceWithdraw2(db *sql.DB, usr string, order string, sum float64) error {
+	var sumAccrual float64
+	var sumWithdraw float64
+	var diffSum float64
+	ctx, cancel := context.WithTimeout(context.Background(), 600*time.Second)
+	defer cancel()
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	rows, err := db.QueryContext(ctx, "SELECT COALESCE(SUM(accrual), 0 ), COALESCE(SUM(withdraw), 0 ) from orders_table WHERE (usr = $1 AND status = 'PROCESSED')", usr)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		err = rows.Scan(&sumAccrual, &sumWithdraw)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	err = rows.Err()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	diffSum = sumAccrual - sumWithdraw
+	//fmt.Println("diffSum:", diffSum)
+	if diffSum < sum {
+		//return errors.New("not enough of loyalty points")
+		return &general.ErrorLoyaltyPoints{}
+	}
+
+	_, err = db.ExecContext(ctx, "INSERT INTO orders_table (usr, order_numb, withdraw) values ($1, $2, $3)", usr, order, sum)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
+}
+
 func BalanceWithdraw(db *sql.DB, usr string, order string, sum float64) error {
 	var sumAccrual float64
 	var sumWithdraw float64
@@ -329,6 +399,37 @@ func BalanceWithdraw(db *sql.DB, usr string, order string, sum float64) error {
 		return err
 	}
 	return nil
+}
+
+func GetUserWithdrawals2(db *sql.DB, usr string) ([]general.WithdrawOrder, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 600*time.Second)
+	defer cancel()
+	rows, err := db.QueryContext(ctx, "SELECT order_numb, withdraw, date_time from orders_table WHERE (usr = $1 AND status = 'PROCESSED' AND withdraw > 0) ORDER BY date_time DESC", usr)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	arrWithdrawOrder := make([]general.WithdrawOrder, 0)
+	for rows.Next() {
+		withdrawOrder := general.WithdrawOrder{}
+		var order string
+		var sum float64
+		var processedAt time.Time
+		err = rows.Scan(&order, &sum, &processedAt)
+		if err != nil {
+			return nil, err
+		}
+		withdrawOrder.Order = order
+		withdrawOrder.Sum = sum
+		withdrawOrder.ProcessedAt = processedAt.Format("2006-01-02T15:04:05-07:00")
+		arrWithdrawOrder = append(arrWithdrawOrder, withdrawOrder)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+	//проверить если нет rows вернуть 204
+	return arrWithdrawOrder, nil
 }
 
 func GetUserWithdrawals(db *sql.DB, usr string) ([]general.WithdrawOrder, error) {
