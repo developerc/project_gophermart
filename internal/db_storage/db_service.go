@@ -215,7 +215,7 @@ func GetUserBalance2(db *sql.DB, usr string) (general.UserBalance, error) {
 	return userBalance, nil
 }
 
-func GetUserBalance(db *sql.DB, usr string) (general.UserBalance, error) {
+/*func GetUserBalance(db *sql.DB, usr string) (general.UserBalance, error) {
 	var sumAccrual float64
 	var sumWithdraw float64
 	userBalance := general.UserBalance{}
@@ -277,7 +277,7 @@ func GetUserBalance(db *sql.DB, usr string) (general.UserBalance, error) {
 		return userBalance, err
 	}
 	return userBalance, nil
-}
+}*/
 
 func CheckUsrOrderNumb(db *sql.DB, usr string, order string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 600*time.Second)
@@ -351,7 +351,7 @@ func BalanceWithdraw2(db *sql.DB, usr string, order string, sum float64) error {
 	return tx.Commit()
 }
 
-func BalanceWithdraw(db *sql.DB, usr string, order string, sum float64) error {
+/*func BalanceWithdraw(db *sql.DB, usr string, order string, sum float64) error {
 	var sumAccrual float64
 	var sumWithdraw float64
 	var diffSum float64
@@ -401,7 +401,7 @@ func BalanceWithdraw(db *sql.DB, usr string, order string, sum float64) error {
 		return err
 	}
 	return nil
-}
+}*/
 
 func GetUserWithdrawals2(db *sql.DB, usr string) ([]general.WithdrawOrder, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 600*time.Second)
@@ -435,7 +435,7 @@ func GetUserWithdrawals2(db *sql.DB, usr string) ([]general.WithdrawOrder, error
 	return arrWithdrawOrder, nil
 }
 
-func GetUserWithdrawals(db *sql.DB, usr string) ([]general.WithdrawOrder, error) {
+/*func GetUserWithdrawals(db *sql.DB, usr string) ([]general.WithdrawOrder, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 600*time.Second)
 	defer cancel()
 	rows, err := db.QueryContext(ctx, "SELECT order_numb, withdraw, date_time from withdraw_table WHERE usr = $1 ORDER BY date_time DESC", usr)
@@ -465,7 +465,7 @@ func GetUserWithdrawals(db *sql.DB, usr string) ([]general.WithdrawOrder, error)
 	}
 	//проверить если нет rows вернуть 204
 	return arrWithdrawOrder, nil
-}
+}*/
 
 func GetOrderNumbs(db *sql.DB) ([]int, error) {
 	// из таблицы order_table выбираем все номера заказов где status равен NEW или REGISTERED, PROCESSING

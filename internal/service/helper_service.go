@@ -64,8 +64,14 @@ func (s *Service) GetUserFromCookie(cookieValue string) (string, error) {
 func (s *Service) PostUserOrders(usr string, buf bytes.Buffer) error {
 	//делать не будем, хендлера на удаление юзера нет! проверка существует ли до сих пор такой юзер в таблице (мог быть раньше зарегистрирован, потом удален)
 	log.Println("from hs PostUserOrders usr:", usr, ", order:", buf.String())
+	//проверим номер заказа на Луна. Номер заказа может не быть в таблице заказов
+	err := checkLuhna(buf.String())
+	log.Println("from hs PostUserOrders, checkLuhna: ", err)
+	if err != nil {
+		return err
+	}
 	//проверка валидности строки запроса
-	var intNum int = 0
+	/*var intNum int = 0
 	for _, runeValue := range buf.String() {
 		//var isdig bool = false
 		if runeValue < 48 || runeValue > 57 {
@@ -77,7 +83,7 @@ func (s *Service) PostUserOrders(usr string, buf bytes.Buffer) error {
 	}
 	if !luhn.Valid(intNum) {
 		return &general.ErrorNumOrder{}
-	}
+	}*/
 	//Загружаем заказ. проверка номер заказа уже загружен? кем?
 	if err := dbstorage.UploadOrder(s.repo.GetServerSettings().DB, usr, buf.String()); err != nil {
 		return err
