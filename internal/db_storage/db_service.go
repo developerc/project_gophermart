@@ -194,7 +194,8 @@ func GetUserBalance2(db *sql.DB, usr string) (general.UserBalance, error) {
 	userBalance := general.UserBalance{}
 	ctx, cancel := context.WithTimeout(context.Background(), 600*time.Second)
 	defer cancel()
-	rows, err := db.QueryContext(ctx, "SELECT COALESCE(SUM(accrual), 0 ), COALESCE(SUM(withdraw), 0 ) from orders_table WHERE (usr = $1 AND status = 'PROCESSED')", usr)
+	//rows, err := db.QueryContext(ctx, "SELECT COALESCE(SUM(accrual), 0 ), COALESCE(SUM(withdraw), 0 ) from orders_table WHERE (usr = $1 AND status = 'PROCESSED')", usr)
+	rows, err := db.QueryContext(ctx, "SELECT COALESCE(SUM(accrual), 0 ), COALESCE(SUM(withdraw), 0 ) from orders_table WHERE usr = $1 ", usr)
 	if err != nil {
 		return userBalance, err
 	}
@@ -315,7 +316,8 @@ func BalanceWithdraw2(db *sql.DB, usr string, order string, sum float64) error {
 	if err != nil {
 		return err
 	}
-	rows, err := db.QueryContext(ctx, "SELECT COALESCE(SUM(accrual), 0 ), COALESCE(SUM(withdraw), 0 ) from orders_table WHERE (usr = $1 AND status = 'PROCESSED')", usr)
+	//rows, err := db.QueryContext(ctx, "SELECT COALESCE(SUM(accrual), 0 ), COALESCE(SUM(withdraw), 0 ) from orders_table WHERE (usr = $1 AND status = 'PROCESSED')", usr)
+	rows, err := db.QueryContext(ctx, "SELECT COALESCE(SUM(accrual), 0 ), COALESCE(SUM(withdraw), 0 ) from orders_table WHERE usr = $1 ", usr)
 	if err != nil {
 		tx.Rollback()
 		return err
