@@ -93,5 +93,6 @@ func ReqLoyalty(db *sql.DB, adresAccrual string, orderNumb int) error {
 		log.Println(err)
 		return err
 	}
+	log.Println("from ReqLoyalty loyaltyOrder.Order: ", loyaltyOrder.Order, ", loyaltyOrder.Status: ", loyaltyOrder.Status, ", loyaltyOrder.Accrual", loyaltyOrder.Accrual)
 	return nil
 }
