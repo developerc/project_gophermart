@@ -206,7 +206,7 @@ func GetUserBalance2(db *sql.DB, usr string) (general.UserBalance, error) {
 			return userBalance, err
 		}
 	}
-	userBalance.Current = sumAccrual
+	userBalance.Current = sumAccrual - sumWithdraw
 	userBalance.Withdrawn = sumWithdraw
 	err = rows.Err()
 	if err != nil {
