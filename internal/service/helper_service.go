@@ -127,16 +127,34 @@ func (s *Service) PostBalanceWithdraw(usr string, buf bytes.Buffer) error {
 	if err = json.Unmarshal(buf.Bytes(), &orderSum); err != nil {
 		return err
 	}
-	//fmt.Println(orderSum)
-	err = dbstorage.CheckUsrOrderNumb(s.repo.GetServerSettings().DB, usr, orderSum.Order)
-	//fmt.Println("err1:", err)
+	log.Println("from hs PostBalanceWithdraw, usr: ", usr, ", orderSum: ", orderSum)
+	//err = dbstorage.CheckUsrOrderNumb(s.repo.GetServerSettings().DB, usr, orderSum.Order)
+	//проверим номер заказа на Луна. Номер заказа может не быть в таблице заказов
+	err = checkLuhna(orderSum.Order)
+	log.Println("from hs PostBalanceWithdraw, checkLuhna: ", err)
 	if err != nil {
 		return err
 	}
 	err = dbstorage.BalanceWithdraw(s.repo.GetServerSettings().DB, usr, orderSum.Order, orderSum.Sum)
-	//fmt.Println("err2:", err)
+	log.Println("from hs PostBalanceWithdraw, BalanceWithdraw err: ", err)
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func checkLuhna(order string) error {
+	//проверка валидности строки запроса
+	var intNum int = 0
+	for _, runeValue := range order {
+		if runeValue < 48 || runeValue > 57 {
+			return &general.ErrorNumOrder{}
+		}
+		//проверка на Луну
+		intNum = intNum*10 + int(runeValue-48)
+	}
+	if !luhn.Valid(intNum) {
+		return &general.ErrorNumOrder{}
 	}
 	return nil
 }
