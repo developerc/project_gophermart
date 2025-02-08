@@ -152,7 +152,7 @@ func (s *Service) PostBalanceWithdraw(usr string, buf bytes.Buffer) error {
 
 func checkLuhna(order string) error {
 	//проверка валидности строки запроса
-	var intNum int = 0
+	intNum := 0
 	for _, runeValue := range order {
 		if runeValue < 48 || runeValue > 57 {
 			return &general.ErrorNumOrder{}

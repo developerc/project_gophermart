@@ -476,7 +476,7 @@ func GetOrderNumbs(db *sql.DB) ([]int, error) {
 		return nil, err
 	}
 	var order int
-	var arrOrder []int = make([]int, 0)
+	arrOrder := make([]int, 0)
 	for rows.Next() {
 		err = rows.Scan(&order)
 		if err != nil {
