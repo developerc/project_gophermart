@@ -406,7 +406,8 @@ func BalanceWithdraw(db *sql.DB, usr string, order string, sum float64) error {
 func GetUserWithdrawals2(db *sql.DB, usr string) ([]general.WithdrawOrder, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 600*time.Second)
 	defer cancel()
-	rows, err := db.QueryContext(ctx, "SELECT order_numb, withdraw, date_time from orders_table WHERE (usr = $1 AND status = 'PROCESSED' AND withdraw > 0) ORDER BY date_time DESC", usr)
+	//rows, err := db.QueryContext(ctx, "SELECT order_numb, withdraw, date_time from orders_table WHERE (usr = $1 AND status = 'PROCESSED' AND withdraw > 0) ORDER BY date_time DESC", usr)
+	rows, err := db.QueryContext(ctx, "SELECT order_numb, withdraw, date_time from orders_table WHERE (usr = $1 AND withdraw > 0) ORDER BY date_time DESC", usr)
 	if err != nil {
 		return nil, err
 	}
