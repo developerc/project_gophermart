@@ -71,6 +71,12 @@ func ReqLoyalty(db *sql.DB, adresAccrual string, orderNumb int) error {
 	}
 	if stCode == 429 {
 		//обработаем Body, приостановим запросы
+		retryAfter := response.Header.Get("Retry-After")
+		retryAfterSec, err = strconv.Atoi(retryAfter)
+		if err != nil {
+			retryAfterSec = 0
+		}
+		//retryAfterSec = getRetryAfterSec(response.Header.Get("Retry-After"))
 		return errors.New("response Status code: 429")
 	}
 	//если статускод 200

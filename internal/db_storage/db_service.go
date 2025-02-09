@@ -45,12 +45,12 @@ func CreateTables(db *sql.DB) error {
 		return err
 	}
 
-	const crwd string = "CREATE TABLE IF NOT EXISTS withdraw_table( uuid serial primary key, " +
+	/*const crwd string = "CREATE TABLE IF NOT EXISTS withdraw_table( uuid serial primary key, " +
 		"usr TEXT, order_numb TEXT, withdraw REAL NOT NULL DEFAULT 0.0, date_time TIMESTAMP NOT NULL DEFAULT NOW())"
 	_, err = db.ExecContext(ctx, crwd)
 	if err != nil {
 		return err
-	}
+	}*/
 
 	const pgcrpt string = "CREATE EXTENSION pgcrypto"
 	_, err = db.ExecContext(ctx, pgcrpt)
