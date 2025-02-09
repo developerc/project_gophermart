@@ -10,6 +10,7 @@ import (
 
 	dbstorage "github.com/developerc/project_gophermart/internal/db_storage"
 	"github.com/developerc/project_gophermart/internal/general"
+	"github.com/developerc/project_gophermart/internal/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -294,6 +295,7 @@ func NewServer(service svc) (*Server, error) {
 
 func (s *Server) SetupRoutes() http.Handler {
 	r := chi.NewRouter()
+	r.Use(middleware.GzipHandle)
 	r.Post("/api/user/register", s.Register)
 	r.Post("/api/user/login", s.UserLogin)
 	r.Post("/api/user/orders", s.PostUserOrders)
