@@ -3,11 +3,6 @@ package service
 import (
 	"bytes"
 	"encoding/json"
-	"log"
-
-	//"fmt"
-
-	//"errors"
 
 	"net/http"
 
@@ -62,29 +57,11 @@ func (s *Service) GetUserFromCookie(cookieValue string) (string, error) {
 }
 
 func (s *Service) PostUserOrders(usr string, buf bytes.Buffer) error {
-	//делать не будем, хендлера на удаление юзера нет! проверка существует ли до сих пор такой юзер в таблице (мог быть раньше зарегистрирован, потом удален)
-	log.Println("from hs PostUserOrders usr:", usr, ", order:", buf.String())
-	//проверим номер заказа на Луна. Номер заказа может не быть в таблице заказов
 	err := checkLuhna(buf.String())
-	log.Println("from hs PostUserOrders, checkLuhna: ", err)
 	if err != nil {
 		return err
 	}
-	//проверка валидности строки запроса
-	/*var intNum int = 0
-	for _, runeValue := range buf.String() {
-		//var isdig bool = false
-		if runeValue < 48 || runeValue > 57 {
-			//return errors.New("invalid numer of order")
-			return &general.ErrorNumOrder{}
-		}
-		//проверка на Луну
-		intNum = intNum*10 + int(runeValue-48)
-	}
-	if !luhn.Valid(intNum) {
-		return &general.ErrorNumOrder{}
-	}*/
-	//Загружаем заказ. проверка номер заказа уже загружен? кем?
+
 	if err := dbstorage.UploadOrder(s.repo.GetServerSettings().DB, usr, buf.String()); err != nil {
 		return err
 	}
@@ -92,22 +69,15 @@ func (s *Service) PostUserOrders(usr string, buf bytes.Buffer) error {
 }
 
 func (s *Service) GetUserOrders(usr string) ([]byte, error) {
-	//fmt.Println("from GetUserOrders usr", usr)
-	//var arrUploadedOrder []general.UploadedOrder
 	arrUploadedOrder, err := dbstorage.GetUserOrders(s.repo.GetServerSettings().DB, usr)
 	if err != nil {
-		log.Println("from hs GetUserOrders usr:", usr, ", Error dbstorage:", err)
 		return nil, err
 	}
-	log.Println("from hs GetUserOrders usr:", usr, ", arrUploadedOrder:", arrUploadedOrder)
 	jsonBytes, err := json.Marshal(arrUploadedOrder)
 	if err != nil {
-		log.Println("from hs GetUserOrders usr:", usr, ", Error Marshal:", err)
 		return nil, err
 	}
 	if len(arrUploadedOrder) == 0 {
-		//return nil, errors.New("no data 204")
-		log.Println("from hs GetUserOrders usr:", usr, ", ErrorNoContent")
 		return nil, &general.ErrorNoContent{}
 	}
 
@@ -115,7 +85,6 @@ func (s *Service) GetUserOrders(usr string) ([]byte, error) {
 }
 
 func (s Service) GetUserBalance(usr string) ([]byte, error) {
-	//fmt.Println("from GetUserBalance usr", usr)
 	userBalance, err := dbstorage.GetUserBalance2(s.repo.GetServerSettings().DB, usr)
 	if err != nil {
 		return nil, err
@@ -124,7 +93,6 @@ func (s Service) GetUserBalance(usr string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Println("from GetUserBalance usr: ", usr, ", userBalance: ", userBalance)
 	return jsonBytes, nil
 }
 
@@ -134,16 +102,11 @@ func (s *Service) PostBalanceWithdraw(usr string, buf bytes.Buffer) error {
 	if err = json.Unmarshal(buf.Bytes(), &orderSum); err != nil {
 		return err
 	}
-	log.Println("from hs PostBalanceWithdraw, usr: ", usr, ", orderSum: ", orderSum)
-	//err = dbstorage.CheckUsrOrderNumb(s.repo.GetServerSettings().DB, usr, orderSum.Order)
-	//проверим номер заказа на Луна. Номер заказа может не быть в таблице заказов
 	err = checkLuhna(orderSum.Order)
-	log.Println("from hs PostBalanceWithdraw, checkLuhna: ", err)
 	if err != nil {
 		return err
 	}
 	err = dbstorage.BalanceWithdraw2(s.repo.GetServerSettings().DB, usr, orderSum.Order, orderSum.Sum)
-	log.Println("from hs PostBalanceWithdraw, BalanceWithdraw err: ", err)
 	if err != nil {
 		return err
 	}
@@ -151,13 +114,11 @@ func (s *Service) PostBalanceWithdraw(usr string, buf bytes.Buffer) error {
 }
 
 func checkLuhna(order string) error {
-	//проверка валидности строки запроса
 	intNum := 0
 	for _, runeValue := range order {
 		if runeValue < 48 || runeValue > 57 {
 			return &general.ErrorNumOrder{}
 		}
-		//проверка на Луну
 		intNum = intNum*10 + int(runeValue-48)
 	}
 	if !luhn.Valid(intNum) {
@@ -176,7 +137,6 @@ func (s *Service) GetUserWithdrawals(usr string) ([]byte, error) {
 		return nil, err
 	}
 	if len(arrWithdrawOrder) == 0 {
-		//return nil, errors.New("no data 204")
 		return nil, &general.ErrorNoContent{}
 	}
 

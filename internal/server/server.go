@@ -3,9 +3,6 @@ package server
 import (
 	"bytes"
 	"errors"
-	"log"
-
-	//"fmt"
 	"net/http"
 
 	dbstorage "github.com/developerc/project_gophermart/internal/db_storage"
@@ -52,7 +49,6 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 		}
 
 	}
-	//fmt.Println("cookie:", cookie)
 	http.SetCookie(w, cookie)
 
 	w.WriteHeader(http.StatusOK)
@@ -75,7 +71,6 @@ func (s *Server) UserLogin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	//fmt.Println(cookie)
 	http.SetCookie(w, cookie)
 	w.WriteHeader(http.StatusOK)
 }
@@ -83,7 +78,6 @@ func (s *Server) UserLogin(w http.ResponseWriter, r *http.Request) {
 func (s *Server) PostUserOrders(w http.ResponseWriter, r *http.Request) {
 	var usr string
 	var buf bytes.Buffer
-	//проверим ессть ли куки, узнаем юзера
 	cookie, err := r.Cookie("user")
 	if err != nil {
 		switch {
@@ -100,15 +94,13 @@ func (s *Server) PostUserOrders(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	//fmt.Println("usr:", usr)
-	//заберем боди
 	_, err = buf.ReadFrom(r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	err = s.service.PostUserOrders(usr, buf)
-	//много вариантов err
+
 	if err != nil {
 		if _, ok := err.(*general.ErrorNumOrder); ok {
 			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -130,10 +122,8 @@ func (s *Server) PostUserOrders(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetUserOrders(w http.ResponseWriter, r *http.Request) {
-	//fmt.Println("from GetUserOrders")
 	var usr string
 	var jsonBytes []byte
-	//проверим ессть ли куки, узнаем юзера
 	cookie, err := r.Cookie("user")
 	if err != nil {
 		switch {
@@ -150,7 +140,6 @@ func (s *Server) GetUserOrders(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	log.Println("from GetUserOrders usr: ", usr)
 	jsonBytes, err = s.service.GetUserOrders(usr)
 	if err != nil {
 		if _, ok := err.(*general.ErrorNoContent); ok {
@@ -168,7 +157,6 @@ func (s *Server) GetUserOrders(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetUserBalance(w http.ResponseWriter, r *http.Request) {
-	//fmt.Println("from GetUserBalance")
 	var usr string
 	var jsonBytes []byte
 	cookie, err := r.Cookie("user")
@@ -202,7 +190,6 @@ func (s *Server) GetUserBalance(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) PostBalanceWithdraw(w http.ResponseWriter, r *http.Request) {
-	//fmt.Println("from PostBalanceWithdraw")
 	var usr string
 	var buf bytes.Buffer
 	cookie, err := r.Cookie("user")
@@ -221,8 +208,7 @@ func (s *Server) PostBalanceWithdraw(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	//fmt.Println("usr:", usr)
-	//заберем боди
+
 	_, err = buf.ReadFrom(r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -230,10 +216,6 @@ func (s *Server) PostBalanceWithdraw(w http.ResponseWriter, r *http.Request) {
 	}
 	err = s.service.PostBalanceWithdraw(usr, buf)
 	if err != nil {
-		/*if _, ok := err.(*general.ErrorNumOrder); ok {
-			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
-			return
-		}*/
 		if _, ok := err.(*general.ErrorLoyaltyPoints); ok {
 			http.Error(w, err.Error(), http.StatusPaymentRequired)
 			return
@@ -252,7 +234,6 @@ func (s *Server) PostBalanceWithdraw(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetUserWithdrawals(w http.ResponseWriter, r *http.Request) {
-	//fmt.Println("from GetUserWithdrawals")
 	var usr string
 	cookie, err := r.Cookie("user")
 	if err != nil {
@@ -270,7 +251,6 @@ func (s *Server) GetUserWithdrawals(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	//fmt.Println("usr:", usr)
 	jsonBytes, err := s.service.GetUserWithdrawals(usr)
 	if err != nil {
 		if _, ok := err.(*general.ErrorNoContent); ok {

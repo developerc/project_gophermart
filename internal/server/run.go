@@ -16,10 +16,7 @@ func Run() error {
 	if err != nil {
 		return err
 	}
-	//log.Println(server)
 	routes := server.SetupRoutes()
-	//err = http.ListenAndServe(service.GetServerSettings().AdresRun, routes)
-	//fmt.Println("GetAdresRun:", service.GetAdresRun())
 	err = http.ListenAndServe(service.GetAdresRun(), routes)
 	if err != nil {
 		log.Println(err)
