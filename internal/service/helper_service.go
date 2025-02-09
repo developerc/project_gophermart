@@ -3,14 +3,12 @@ package service
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
-
-	//"errors"
 
 	"net/http"
 
 	dbstorage "github.com/developerc/project_gophermart/internal/db_storage"
 	"github.com/developerc/project_gophermart/internal/general"
+	"github.com/theplant/luhn"
 )
 
 type User struct {
@@ -59,25 +57,11 @@ func (s *Service) GetUserFromCookie(cookieValue string) (string, error) {
 }
 
 func (s *Service) PostUserOrders(usr string, buf bytes.Buffer) error {
-	//fmt.Println("from PostUserOrders usr", usr)
-	//var numOrderStr string
-	//numOrderStr := buf.String()
-	//numOrderBytes := buf.Bytes()
-	//fmt.Println(numOrderStr)
-	//fmt.Println(numOrderBytes)
-	//fmt.Println("len(numOrderStr):", len(numOrderStr), ", len(numOrderBytes):", len(numOrderBytes))
-	//делать не будем, хендлера на удаление юзера нет! проверка существует ли до сих пор такой юзер в таблице (мог быть раньше зарегистрирован, потом удален)
-
-	//проверка валидности строки запроса
-	for _, runeValue := range buf.String() {
-		//var isdig bool = false
-		if runeValue < 48 || runeValue > 57 {
-			//return errors.New("invalid numer of order")
-			return &general.ErrorNumOrder{}
-		}
-		//fmt.Println(runeValue, isdig)
+	err := checkLuhna(buf.String())
+	if err != nil {
+		return err
 	}
-	//Загружаем заказ. проверка номер заказа уже загружен? кем?
+
 	if err := dbstorage.UploadOrder(s.repo.GetServerSettings().DB, usr, buf.String()); err != nil {
 		return err
 	}
@@ -85,19 +69,15 @@ func (s *Service) PostUserOrders(usr string, buf bytes.Buffer) error {
 }
 
 func (s *Service) GetUserOrders(usr string) ([]byte, error) {
-	//fmt.Println("from GetUserOrders usr", usr)
-	//var arrUploadedOrder []general.UploadedOrder
 	arrUploadedOrder, err := dbstorage.GetUserOrders(s.repo.GetServerSettings().DB, usr)
 	if err != nil {
 		return nil, err
 	}
-	//fmt.Println(arrUploadedOrder)
 	jsonBytes, err := json.Marshal(arrUploadedOrder)
 	if err != nil {
 		return nil, err
 	}
 	if len(arrUploadedOrder) == 0 {
-		//return nil, errors.New("no data 204")
 		return nil, &general.ErrorNoContent{}
 	}
 
@@ -105,8 +85,7 @@ func (s *Service) GetUserOrders(usr string) ([]byte, error) {
 }
 
 func (s Service) GetUserBalance(usr string) ([]byte, error) {
-	fmt.Println("from GetUserBalance usr", usr)
-	userBalance, err := dbstorage.GetUserBalance(s.repo.GetServerSettings().DB, usr)
+	userBalance, err := dbstorage.GetUserBalance2(s.repo.GetServerSettings().DB, usr)
 	if err != nil {
 		return nil, err
 	}
@@ -123,21 +102,43 @@ func (s *Service) PostBalanceWithdraw(usr string, buf bytes.Buffer) error {
 	if err = json.Unmarshal(buf.Bytes(), &orderSum); err != nil {
 		return err
 	}
-	fmt.Println(orderSum)
-	err = dbstorage.CheckUsrOrderNumb(s.repo.GetServerSettings().DB, usr, orderSum.Order)
-	fmt.Println("err1:", err)
+	err = checkLuhna(orderSum.Order)
 	if err != nil {
 		return err
 	}
-	err = dbstorage.BalanceWithdraw(s.repo.GetServerSettings().DB, usr, orderSum.Order, orderSum.Sum)
-	fmt.Println("err2:", err)
+	err = dbstorage.BalanceWithdraw2(s.repo.GetServerSettings().DB, usr, orderSum.Order, orderSum.Sum)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *Service) GetUserWithdrawals(usr string) ([]byte, error) {
+func checkLuhna(order string) error {
+	intNum := 0
+	for _, runeValue := range order {
+		if runeValue < 48 || runeValue > 57 {
+			return &general.ErrorNumOrder{}
+		}
+		intNum = intNum*10 + int(runeValue-48)
+	}
+	if !luhn.Valid(intNum) {
+		return &general.ErrorNumOrder{}
+	}
+	return nil
+}
 
-	return nil, nil
+func (s *Service) GetUserWithdrawals(usr string) ([]byte, error) {
+	arrWithdrawOrder, err := dbstorage.GetUserWithdrawals2(s.repo.GetServerSettings().DB, usr)
+	if err != nil {
+		return nil, err
+	}
+	jsonBytes, err := json.Marshal(arrWithdrawOrder)
+	if err != nil {
+		return nil, err
+	}
+	if len(arrWithdrawOrder) == 0 {
+		return nil, &general.ErrorNoContent{}
+	}
+
+	return jsonBytes, nil
 }
